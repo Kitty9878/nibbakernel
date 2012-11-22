@@ -19,7 +19,11 @@
 #include "internal.h"
 
 bool fsync_enabled = true;
+<<<<<<< HEAD
 module_param(fsync_enabled, bool, 0644);
+=======
+module_param(fsync_enabled, bool, 0755);
+>>>>>>> 7469b3f14275... Added fsync on/off support.
 
 #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
 			SYNC_FILE_RANGE_WAIT_AFTER)
@@ -184,6 +188,10 @@ SYSCALL_DEFINE1(syncfs, int, fd)
  */
 int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
 {
+<<<<<<< HEAD
+=======
+
+>>>>>>> 7469b3f14275... Added fsync on/off support.
 	if (!fsync_enabled)
 		return 0;
 
@@ -205,7 +213,11 @@ int vfs_fsync(struct file *file, int datasync)
 {
 	if (!fsync_enabled)
 		return 0;
+<<<<<<< HEAD
 
+=======
+		
+>>>>>>> 7469b3f14275... Added fsync on/off support.
 	return vfs_fsync_range(file, 0, LLONG_MAX, datasync);
 }
 EXPORT_SYMBOL(vfs_fsync);
@@ -214,6 +226,9 @@ static int do_fsync(unsigned int fd, int datasync)
 {
 	struct fd f = fdget(fd);
 	int ret = -EBADF;
+	
+	if (!fsync_enabled)
+		return 0;
 
 	if (!fsync_enabled)
 		return 0;
@@ -238,7 +253,11 @@ SYSCALL_DEFINE1(fdatasync, unsigned int, fd)
 {
 	if (!fsync_enabled)
 		return 0;
+<<<<<<< HEAD
 
+=======
+		
+>>>>>>> 7469b3f14275... Added fsync on/off support.
 	return do_fsync(fd, 1);
 }
 
