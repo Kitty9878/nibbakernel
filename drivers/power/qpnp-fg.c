@@ -1991,12 +1991,6 @@ static void fg_handle_battery_insertion(struct fg_chip *chip)
 		&chip->update_sram_data, msecs_to_jiffies(0));
 }
 
-
-static int soc_to_setpoint(int soc)
-{
-	return DIV_ROUND_CLOSEST(soc * 255, 100);
-}
-
 static void batt_to_setpoint_adc(int vbatt_mv, u8 *data)
 {
 	int val;
@@ -6806,6 +6800,13 @@ no_profile:
 	htc_battery_probe_process(GAUGE_PROBE_DONE);
 #endif /* CONFIG_HTC_BATT */
 	return rc;
+	
+update:
+	cancel_delayed_work(&chip->update_sram_data);
+	queue_delayed_work(system_power_efficient_wq,
+		&chip->update_sram_data,
+		msecs_to_jiffies(0));
+
 reschedule:
 	queue_delayed_work(system_power_efficient_wq,
 		&chip->batt_profile_init,
@@ -8748,7 +8749,7 @@ out:
 	update_temp_data(&chip->update_temp_work.work);
 	queue_delayed_work(system_power_efficient_wq,
 		&chip->check_sanity_work,
-			msecs_to_jiffies(1000));
+		msecs_to_jiffies(1000));
 	chip->ima_error_handling = false;
 #ifdef CONFIG_HTC_BATT
 	g_is_ima_error_handling = false;
