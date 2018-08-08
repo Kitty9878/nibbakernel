@@ -252,6 +252,11 @@ config CPU_FREQ_GOV_DARKNESS
 	
 config CPU_FREQ_GOV_ELEMENTALX
 	tristate "'elementalx' cpufreq policy governor"
+
+config INPUT_BOOST_FREQ_LP
+	int "Low-power cluster boost freq"
+	default "0"
+	
 	help
 	  'elementalx' - This driver adds a dynamic cpufreq policy governor
 	  designed for latency-sensitive workloads.
