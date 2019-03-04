@@ -23,12 +23,16 @@ struct boost_dev {
 	wait_queue_head_t boost_waitq;
 	atomic_long_t max_boost_expires;
 	unsigned long boost_freq;
-	unsigned long state;
+
+	unsigned long max_boost_expires;
+	unsigned long max_boost_jiffies;
+	spinlock_t lock;
 };
 
 struct df_boost_drv {
 	struct boost_dev devices[DEVFREQ_MAX];
 	struct notifier_block fb_notif;
+	bool screen_awake;
 };
 
 static void devfreq_input_unboost(struct work_struct *work);
@@ -53,7 +57,11 @@ static struct df_boost_drv df_boost_drv_g __read_mostly = {
 
 static void __devfreq_boost_kick(struct boost_dev *b)
 {
-	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state))
+	unsigned long flags;
+
+	spin_lock_irqsave(&b->lock, flags);
+	if (!b->df) {
+		spin_unlock_irqrestore(&b->lock, flags);
 		return;
 
 	set_bit(INPUT_BOOST, &b->state);
@@ -66,6 +74,9 @@ void devfreq_boost_kick(enum df_device device)
 {
 	struct df_boost_drv *d = &df_boost_drv_g;
 
+	if (!d->screen_awake)
+		return;
+
 	__devfreq_boost_kick(d->devices + device);
 }
 
@@ -75,7 +86,10 @@ static void __devfreq_boost_kick_max(struct boost_dev *b,
 	unsigned long boost_jiffies = msecs_to_jiffies(duration_ms);
 	unsigned long curr_expires, new_expires;
 
-	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state))
+
+	spin_lock_irqsave(&b->lock, flags);
+	if (!b->df) {
+		spin_unlock_irqrestore(&b->lock, flags);
 		return;
 
 	do {
@@ -98,6 +112,9 @@ void devfreq_boost_kick_max(enum df_device device, unsigned int duration_ms)
 {
 	struct df_boost_drv *d = &df_boost_drv_g;
 
+	if (!d->screen_awake)
+		return;
+
 	__devfreq_boost_kick_max(d->devices + device, duration_ms);
 }
 
@@ -108,10 +125,40 @@ void devfreq_register_boost_device(enum df_device device, struct devfreq *df)
 
 	df->is_boost_device = true;
 	b = d->devices + device;
-	WRITE_ONCE(b->df, df);
+
+	spin_lock_irqsave(&b->lock, flags);
+	b->df = df;
+	spin_unlock_irqrestore(&b->lock, flags);
 }
 
-static void devfreq_input_unboost(struct work_struct *work)
+static unsigned long devfreq_abs_min_freq(struct boost_dev *b)
+{
+	struct devfreq *df = b->df;
+	int i;
+
+	/* Reuse the absolute min freq found the first time this was called */
+	if (b->abs_min_freq != ULONG_MAX)
+		return b->abs_min_freq;
+
+	/* Find the lowest non-zero freq from the freq table */
+	for (i = 0; i < df->profile->max_state; i++) {
+		unsigned int freq = df->profile->freq_table[i];
+
+		if (!freq)
+			continue;
+
+		if (b->abs_min_freq > freq)
+			b->abs_min_freq = freq;
+	}
+
+	/* Use zero for the absolute min freq if nothing was found */
+	if (b->abs_min_freq == ULONG_MAX)
+		b->abs_min_freq = 0;
+
+	return b->abs_min_freq;
+}
+
+static void devfreq_unboost_all(struct df_boost_drv *d)
 {
 	struct boost_dev *b = container_of(to_delayed_work(work),
 					   typeof(*b), input_unboost);
@@ -179,15 +226,19 @@ static int fb_notifier_cb(struct notifier_block *nb, unsigned long action,
 			  void *data)
 {
 	struct df_boost_drv *d = container_of(nb, typeof(*d), fb_notif);
-	int i, *blank = ((struct fb_event *)data)->data;
+
+	struct fb_event *evdata = data;
+	int *blank = evdata->data;
 
 	/* Parse framebuffer blank events as soon as they occur */
 	if (action != FB_EARLY_EVENT_BLANK)
 		return NOTIFY_OK;
 
 	/* Boost when the screen turns on and unboost when it turns off */
-	for (i = 0; i < DEVFREQ_MAX; i++) {
-		struct boost_dev *b = d->devices + i;
+
+	d->screen_awake = *blank == FB_BLANK_UNBLANK;
+	if (d->screen_awake) {
+		int i;
 
 		if (*blank == FB_BLANK_UNBLANK) {
 			clear_bit(SCREEN_OFF, &b->state);
@@ -208,6 +259,9 @@ static void devfreq_boost_input_event(struct input_handle *handle,
 {
 	struct df_boost_drv *d = handle->handler->private;
 	int i;
+
+	if (!d->screen_awake)
+		return;
 
 	for (i = 0; i < DEVFREQ_MAX; i++)
 		__devfreq_boost_kick(d->devices + i);
