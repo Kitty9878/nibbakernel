@@ -512,6 +512,7 @@ static struct ion_heap_ops system_heap_ops = {
 	.shrink = ion_system_heap_shrink,
 };
 
+<<<<<<< HEAD
 static int ion_system_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 				      void *unused)
 {
@@ -615,6 +616,8 @@ static int ion_system_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 }
 
 
+=======
+>>>>>>> efc798287015... ion: Overhaul for vastly improved clarity and performance
 static void ion_system_heap_destroy_pools(struct ion_page_pool **pools)
 {
 	int i;
@@ -689,7 +692,12 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 	if (ion_system_heap_create_pools(heap->cached_pools))
 		goto err_create_cached_pools;
 
+<<<<<<< HEAD
 	heap->heap.debug_show = ion_system_heap_debug_show;
+=======
+	mutex_init(&heap->split_page_mutex);
+
+>>>>>>> efc798287015... ion: Overhaul for vastly improved clarity and performance
 	return &heap->heap;
 
 err_create_cached_pools:
