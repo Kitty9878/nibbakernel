@@ -175,7 +175,7 @@ int32_t msm_camera_qup_i2c_write(struct msm_camera_i2c_client *client,
 	enum msm_camera_i2c_data_type data_type)
 {
 	int32_t rc = -EFAULT;
-	unsigned char buf[client->addr_type+data_type];
+	unsigned char buf[9 + 9];
 	uint8_t len = 0;
 
 	if ((client->addr_type != MSM_CAMERA_I2C_BYTE_ADDR
