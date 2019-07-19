@@ -48,17 +48,6 @@ config IOSCHED_ROW
 	  Most suitable for mobile devices.
 >>>>>>> e3771bd7a029... Add ROW I/O Scheduler by Qualcomm.
 
-config IOSCHED_ROW
-	tristate "ROW I/O scheduler"
-	default y
-	---help---
-	  The ROW I/O scheduler gives priority to READ requests over the
-	  WRITE requests when dispatching, without starving WRITE requests.
-	  Requests are kept in priority queues. Dispatching is done in a RR
-	  manner when the dispatch quantum for each queue is calculated
-	  according to queue priority.
-	  Most suitable for mobile devices.
-
 config IOSCHED_CFQ
 	tristate "CFQ I/O scheduler"
 	default y
@@ -100,16 +89,6 @@ choice
 	config DEFAULT_CFQ
 		bool "CFQ" if IOSCHED_CFQ=y
 
-	config DEFAULT_ROW
-		bool "ROW" if IOSCHED_ROW=y
-		help
-		  The ROW I/O scheduler gives priority to READ requests
-		  over the WRITE requests when dispatching, without starving
-		  WRITE requests. Requests are kept in priority queues.
-		  Dispatching is done in a RR manner when the dispatch quantum
-		  for each queue is defined according to queue priority.
-		  Most suitable for mobile devices.
-
 	config DEFAULT_NOOP
 		bool "No-op"
 
@@ -124,15 +103,6 @@ config DEFAULT_IOSCHED
 	default "row" if DEFAULT_ROW
 	default "cfq" if DEFAULT_CFQ
 	default "noop" if DEFAULT_NOOP
-<<<<<<< HEAD
-=======
-	default "row" if DEFAULT_ROW
-	default "fiops" if DEFAULT_FIOPS
-	default "sio" if DEFAULT_SIO
-	default "zen" if DEFAULT_ZEN
-	default "tripndroid" if DEFAULT_TRIPNDROID
-	default "sioplus" if DEFAULT_SIOPLUS
->>>>>>> df8ba5587f32... block: build ROW
 	default "maple" if DEFAULT_MAPLE
 
 endmenu
