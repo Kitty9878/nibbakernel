@@ -54,8 +54,6 @@ config CFQ_GROUP_IOSCHED
 	---help---
 	  Enable group IO scheduling in CFQ.
 
-<<<<<<< HEAD
-=======
 config IOSCHED_BFQ
 	tristate "BFQ I/O scheduler"
 	default n
@@ -99,8 +97,7 @@ config IOSCHED_TRIPNDROID
 	default y
 	---help---
 	  The Trip N Droid scheduler
-
->>>>>>> 28985d2038c3... add sioplus and tripndroid sched
+	  
 choice
 	prompt "Default I/O scheduler"
 	default DEFAULT_CFQ
@@ -132,16 +129,12 @@ config DEFAULT_IOSCHED
 	string
 	default "deadline" if DEFAULT_DEADLINE
 	default "cfq" if DEFAULT_CFQ
-	default "noop" if DEFAULT_NOOP
-<<<<<<< HEAD
 	default "maple" if DEFAULT_MAPLE
-=======
 	default "fiops" if DEFAULT_FIOPS
 	default "sio" if DEFAULT_SIO
 	default "zen" if DEFAULT_ZEN
 	default "sioplus" if DEFAULT_SIOPLUS
 	default "tripndroid" if DEFAULT_TRIPNDROID
->>>>>>> 28985d2038c3... add sioplus and tripndroid sched
 
 endmenu
 
