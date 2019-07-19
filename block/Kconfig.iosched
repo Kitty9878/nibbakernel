@@ -88,16 +88,14 @@ choice
 	config DEFAULT_NOOP
 		bool "No-op"
 
-<<<<<<< HEAD
 	config DEFAULT_MAPLE
 		bool "Maple" if IOSCHED_MAPLE=y
-=======
+
 	config DEFAULT_SIO
 		bool "SIO" if IOSCHED_SIO=y
 
 	config DEFAULT_FIOPS
 		bool "FIOPS" if IOSCHED_FIOPS=y
->>>>>>> a5d66da7e412... Add SIO and FIOPS i/o schedulers
 
 endchoice
 
@@ -106,13 +104,12 @@ config DEFAULT_IOSCHED
 	default "deadline" if DEFAULT_DEADLINE
 	default "cfq" if DEFAULT_CFQ
 	default "noop" if DEFAULT_NOOP
-<<<<<<< HEAD
+
 	default "maple" if DEFAULT_MAPLE
-=======
+
 	default "fiops" if DEFAULT_FIOPS
 	default "sio" if DEFAULT_SIO
->>>>>>> a5d66da7e412... Add SIO and FIOPS i/o schedulers
-
+	
 endmenu
 
 endif
