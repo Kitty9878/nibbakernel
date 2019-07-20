@@ -48,81 +48,6 @@
 #include "ion_priv.h"
 #include "compat_ion.h"
 
-/**
- * struct ion_device - the metadata of the ion device node
- * @dev:		the actual misc device
- * @buffers:		an rb tree of all the existing buffers
- * @buffer_lock:	lock protecting the tree of buffers
- * @lock:		rwsem protecting the tree of heaps and clients
- * @heaps:		list of all the heaps in the system
- * @user_clients:	list of all the clients created from userspace
- */
-struct ion_device {
-	struct miscdevice dev;
-	struct rb_root buffers;
-	struct mutex buffer_lock;
-	struct rw_semaphore lock;
-	struct plist_head heaps;
-	long (*custom_ioctl)(struct ion_client *client, unsigned int cmd,
-			     unsigned long arg);
-	struct rb_root clients;
-	struct dentry *debug_root;
-	struct dentry *heaps_debug_root;
-	struct dentry *clients_debug_root;
-};
-
-/**
- * struct ion_client - a process/hw block local address space
- * @node:		node in the tree of all clients
- * @dev:		backpointer to ion device
- * @handles:		an rb tree of all the handles in this client
- * @idr:		an idr space for allocating handle ids
- * @lock:		lock protecting the tree of handles
- * @name:		used for debugging
- * @display_name:	used for debugging (unique version of @name)
- * @display_serial:	used for debugging (to make display_name unique)
- * @task:		used for debugging
- *
- * A client represents a list of buffers this client may access.
- * The mutex stored here is used to protect both handles tree
- * as well as the handles themselves, and should be held while modifying either.
- */
-struct ion_client {
-	struct rb_node node;
-	struct ion_device *dev;
-	struct rb_root handles;
-	struct idr idr;
-	struct mutex lock;
-	char *name;
-	char *display_name;
-	int display_serial;
-	struct task_struct *task;
-	pid_t pid;
-	struct dentry *debug_root;
-};
-
-/**
- * ion_handle - a client local reference to a buffer
- * @ref:		reference count
- * @client:		back pointer to the client the buffer resides in
- * @buffer:		pointer to the buffer
- * @node:		node in the client's handle rbtree
- * @kmap_cnt:		count of times this client has mapped to kernel
- * @id:			client-unique id allocated by client->idr
- *
- * Modifications to node, map_cnt or mapping should be protected by the
- * lock in the client.  Other fields are never changed after initialization.
- */
-struct ion_handle {
-	struct kref ref;
-	unsigned int user_ref_count;
-	struct ion_client *client;
-	struct ion_buffer *buffer;
-	struct rb_node node;
-	unsigned int kmap_cnt;
-	int id;
-};
-
 static struct ion_device *ion_dev;
 
 bool ion_buffer_fault_user_mappings(struct ion_buffer *buffer)
@@ -235,22 +160,11 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 		struct scatterlist *sg;
 		int i, j, k = 0;
 
-<<<<<<< HEAD
-
-=======
->>>>>>> parent of 6a3905974191... ion: Overhaul for vastly improved clarity and performance
-		buffer->pages = vmalloc(array_size(num_pages, sizeof(struct page *)));
+		buffer->pages = vmalloc(sizeof(struct page *) * num_pages);
 		if (!buffer->pages) {
 			ret = -ENOMEM;
 			goto err1;
 		}
-<<<<<<< HEAD
-
-		buffer->pages = vmalloc(sizeof(*buffer->pages) * num_pages);
-		if (!buffer->pages)
-			goto unmap_dma;
-=======
->>>>>>> parent of 6a3905974191... ion: Overhaul for vastly improved clarity and performance
 
 		for_each_sg(table->sgl, sg, table->nents, i) {
 			struct page *page = sg_page(sg);
@@ -276,20 +190,12 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 		if (sg_dma_address(sg) == 0)
 			sg_dma_address(sg) = sg_phys(sg);
 	}
-<<<<<<< HEAD
-	
-=======
->>>>>>> parent of 6a3905974191... ion: Overhaul for vastly improved clarity and performance
 	mutex_lock(&dev->buffer_lock);
 	ion_buffer_add(dev, buffer);
 	mutex_unlock(&dev->buffer_lock);
+	trace_ion_heap_grow(heap->name, len,
+				atomic_read(&heap->total_allocated));
 	atomic_add(len, &heap->total_allocated);
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> parent of 6a3905974191... ion: Overhaul for vastly improved clarity and performance
 	return buffer;
 
 err:
@@ -309,13 +215,9 @@ void ion_buffer_destroy(struct ion_buffer *buffer)
 		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
 	buffer->heap->ops->unmap_dma(buffer->heap, buffer);
 
-<<<<<<< HEAD
-
+	trace_ion_heap_shrink(buffer->heap->name,  buffer->size,
+				atomic_read(&buffer->heap->total_allocated));
 	atomic_sub(buffer->size, &buffer->heap->total_allocated);
-
-=======
-	atomic_sub(buffer->size, &buffer->heap->total_allocated);
->>>>>>> parent of 6a3905974191... ion: Overhaul for vastly improved clarity and performance
 	buffer->heap->ops->free(buffer);
 	if (buffer->pages)
 		vfree(buffer->pages);
@@ -1584,17 +1486,6 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 	if (IS_ERR(dmabuf))
 		return PTR_ERR(dmabuf);
 
-<<<<<<< HEAD
-	if (dmabuf->ops != &dma_buf_ops)
-		goto put_dmabuf;
-
-	buffer = dmabuf->priv;
-	if (get_secure_vmid(buffer->flags) > 0) {
-		pr_err("%s: cannot sync a secure dmabuf\n", __func__);
-		dma_buf_put(dmabuf);
-		return -EINVAL;
-	}
-=======
 	/* if this memory came from ion */
 	if (dmabuf->ops != &dma_buf_ops) {
 		pr_err("%s: can not sync dmabuf from another exporter\n",
@@ -1603,8 +1494,12 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 		return -EINVAL;
 	}
 	buffer = dmabuf->priv;
->>>>>>> parent of 6a3905974191... ion: Overhaul for vastly improved clarity and performance
 
+	if (get_secure_vmid(buffer->flags) > 0) {
+		pr_err("%s: cannot sync a secure dmabuf\n", __func__);
+		dma_buf_put(dmabuf);
+		return -EINVAL;
+	}
 	dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
 			       buffer->sg_table->nents, DMA_BIDIRECTIONAL);
 	dma_buf_put(dmabuf);
