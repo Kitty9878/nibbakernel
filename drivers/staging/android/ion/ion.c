@@ -125,17 +125,16 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 		int num_pages = PAGE_ALIGN(buffer->size) / PAGE_SIZE;
 		int j, k = 0;
 
-<<<<<<< HEAD
+
 		buffer->pages = vmalloc(array_size(num_pages, sizeof(struct page *)));
 		if (!buffer->pages) {
 			ret = -ENOMEM;
 			goto err1;
 		}
-=======
+
 		buffer->pages = vmalloc(sizeof(*buffer->pages) * num_pages);
 		if (!buffer->pages)
 			goto unmap_dma;
->>>>>>> 0833338569e0... ion: Overhaul for vastly improved clarity and performance
 
 		for_each_sg(table->sgl, sg, table->nents, i) {
 			struct page *page = sg_page(sg);
@@ -152,14 +151,14 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 		if (sg_dma_address(sg) == 0)
 			sg_dma_address(sg) = sg_phys(sg);
 	}
-<<<<<<< HEAD
+	
 	mutex_lock(&dev->buffer_lock);
 	ion_buffer_add(dev, buffer);
 	mutex_unlock(&dev->buffer_lock);
 	atomic_add(len, &heap->total_allocated);
-=======
 
->>>>>>> 0833338569e0... ion: Overhaul for vastly improved clarity and performance
+
+
 	return buffer;
 
 unmap_dma:
@@ -179,10 +178,9 @@ void ion_buffer_destroy(struct ion_buffer *buffer)
 		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
 	buffer->heap->ops->unmap_dma(buffer->heap, buffer);
 
-<<<<<<< HEAD
+
 	atomic_sub(buffer->size, &buffer->heap->total_allocated);
-=======
->>>>>>> 0833338569e0... ion: Overhaul for vastly improved clarity and performance
+
 	buffer->heap->ops->free(buffer);
 	if (ion_buffer_fault_user_mappings(buffer))
 		vfree(buffer->pages);
@@ -897,15 +895,13 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 	if (dmabuf->ops != &dma_buf_ops)
 		goto put_dmabuf;
 
-<<<<<<< HEAD
-=======
 	buffer = dmabuf->priv;
 	if (get_secure_vmid(buffer->flags) > 0) {
 		pr_err("%s: cannot sync a secure dmabuf\n", __func__);
 		dma_buf_put(dmabuf);
 		return -EINVAL;
 	}
->>>>>>> 0833338569e0... ion: Overhaul for vastly improved clarity and performance
+
 	dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
 			       buffer->sg_table->nents, DMA_BIDIRECTIONAL);
 	dma_buf_put(dmabuf);
