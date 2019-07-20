@@ -1188,8 +1188,6 @@ config CRYPTO_SERPENT_AVX2_X86_64
 	  See also:
 	  <http://www.cl.cam.ac.uk/~rja14/serpent.html>
 
-<<<<<<< HEAD
-=======
 config CRYPTO_SPECK
 	tristate "Speck cipher algorithm"
 	select CRYPTO_ALGAPI
@@ -1211,7 +1209,7 @@ config CRYPTO_SPECK_NEON
 	select CRYPTO_GF128MUL
 	select CRYPTO_SPECK
 
->>>>>>> 913426547fa7... BACKPORT, FROMGIT: crypto: arm/speck - add NEON-accelerated implementation of Speck-XTS
+
 config CRYPTO_TEA
 	tristate "TEA, XTEA and XETA cipher algorithms"
 	select CRYPTO_ALGAPI
