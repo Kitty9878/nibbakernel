@@ -209,6 +209,5 @@ static inline const char *kbasename(const char *path)
 		__builtin_choose_expr(__builtin_constant_p(right),		\
 			memcmp((left), (right), strlen(right) + 1),		\
 			(strcmp)((left), (right))))
->>>>>>> bd70c311f30c... string: Use faster alternatives when constant arguments are used
 
 #endif /* _LINUX_STRING_H_ */
